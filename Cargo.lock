@@ -553,18 +553,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 
 [[package]]
-name = "potd"
-version = "0.1.0"
-dependencies = [
- "dirs",
- "dotenv",
- "reqwest",
- "serde",
- "serde_json",
- "windows",
-]
-
-[[package]]
 name = "proc-macro2"
 version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1278,4 +1266,16 @@ checksum = "524e57b2c537c0f9b1e69f1965311ec12182b4122e45035b1508cd24d2adadb1"
 dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "xapod"
+version = "0.1.0"
+dependencies = [
+ "dirs",
+ "dotenv",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "windows",
 ]
