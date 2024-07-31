@@ -50,18 +50,66 @@ mod windows_background {
 
 #[cfg(target_os = "linux")]
 mod linux_background {
+    use std::env;
     use std::path::Path;
     use std::process::Command;
 
     pub fn set_wallpaper(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-        Command::new("gsettings")
-            .args(&[
-                "set",
-                "org.gnome.desktop.background",
-                "picture-uri",
-                &format!("file://{}", path.display()),
-            ])
-            .output()?;
+        let desktop_env = env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+        match desktop_env.as_str() {
+            // Handle GNOME desktops
+            env if env.contains("GNOME") => {
+                let output = Command::new("gsettings")
+                    .args(&[
+                        "set",
+                        "org.gnome.desktop.background",
+                        "picture-uri",
+                        &format!("file://{}", path.display()),
+                    ])
+                    .output()?;
+
+                if !output.status.success() {
+                    return Err(format!(
+                        "Failed to set GNOME wallpaper: {}",
+                        String::from_utf8_lossy(&output.stderr)
+                    )
+                    .into());
+                }
+            }
+            // Handle KDE desktops
+            env if env.contains("KDE") => {
+                let script = format!(
+                    r#"
+                var allDesktops = desktops();
+                    d = allDesktops[0];
+                    d.wallpaperPlugin = "org.kde.image";
+                    d.currentConfigGroup = Array("Wallpaper", "org.kde.image", "General");
+                    d.writeConfig("Image", "file://{}")
+                "#,
+                    path.display()
+                );
+
+                let output = Command::new("qdbus")
+                    .args(&[
+                        "org.kde.plasmashell",
+                        "/PlasmaShell",
+                        "org.kde.PlasmaShell.evaluateScript",
+                        &script,
+                    ])
+                    .output()?;
+
+                if !output.status.success() {
+                    return Err(format!(
+                        "Failed to set KDE wallpaper: {}",
+                        String::from_utf8_lossy(&output.stderr)
+                    )
+                    .into());
+                }
+            }
+            _ => {
+                return Err("Unsupported desktop environment".into());
+            }
+        }
         Ok(())
     }
 }
@@ -77,8 +125,10 @@ fn main() {
         Ok(api_response) => {
             println!("Fetched image data: {:?}", api_response);
 
-            let filename = "background.jpg";
-            let download_path = picture_dir().unwrap().join(filename);
+            let filename = "apod.jpg";
+            let download_path = picture_dir()
+                .expect("Could not find picture directory")
+                .join(filename);
 
             match download_image(&api_response.hdurl, download_path.to_str().unwrap()) {
                 Ok(path) => {
