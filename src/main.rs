@@ -29,19 +29,20 @@ fn download_image(url: &str, filename: &str) -> Result<PathBuf, Box<dyn std::err
 
 #[cfg(target_os = "windows")]
 mod windows_background {
-    use std::os::windows::ffi::OsStrExt;
+    use std::ffi::OsStr;
     use std::path::Path;
-    use windows::Win32::Foundation::PWSTR;
-    use windows::Win32::UI::WindowsAndMessaging::{SystemParametersInfoW, SPI_SETDESKWALLPAPER};
+    use std::os::windows::ffi::OsStrExt;
+    use windows::Win32::UI::WindowsAndMessaging::SystemParametersInfoW;
+    use windows::Win32::UI::WindowsAndMessaging::SPI_SETDESKWALLPAPER;
 
     pub fn set_wallpaper(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-        let path_str: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+        let path_str: Vec<u16> = OsStr::new(path).encode_wide().chain(Some(0)).collect();
         unsafe {
-            SystemParametersInfoW(
+            let _ = SystemParametersInfoW(
                 SPI_SETDESKWALLPAPER,
                 0,
-                PWSTR(path_str.as_ptr() as *mut _),
-                0,
+                Some(path_str.as_ptr() as *mut _),
+                windows::Win32::UI::WindowsAndMessaging::SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
             );
         }
         Ok(())
